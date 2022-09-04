@@ -42,16 +42,16 @@ async def presence_change():
   await bot.change_presence(activity=nextcord.Game(name=f"スパムを検出中..."))
  
 
-@bot.slash_command(description="botのバージョンを表示する")
+@bot.command()
 async def ver(ctx):
   embed=nextcord.Embed(title="バージョン",description=f"サーバー運営bot ver1.14")
   await ctx.send(embed=embed)
 
-@bot.slash_command(description="botのpingを実行する")
+@bot.command()
 async def ping(ctx):
  await ctx.send(f"{round(bot.latency * 1000)}ms")
 
-@bot.slash_command(description="helpコマンドを実行する")
+@bot.command()
 async def help(ctx):
   embed=nextcord.Embed(title="help",description=f"""
 !s.help   このhelpを表示します。
@@ -64,76 +64,6 @@ BOT:サーバー運営BOT#6960 開発者：RENKUN0105#6484
   await ctx.send(embed=embed)
   os.execl(sys.executable,sys.executable,*sys.argv)
 
-#ReactionRoleBotの親コマンド
-
-@bot.command()
-async def add(ctx,*roles:nextcord.Role):
-  if ctx.author.guild_permissions.manage_messages:
-    if not config['guild'] == str(ctx.guild.id):
-      return
-    if len(roles) > 20:
-      await ctx.send("ロール数は20以下で指定してください")
-      return
-    if len(roles) <= 0:
-      await ctx.send("ロールを指定してください")
-      return
-    reactions = ["🇦","🇧","🇨","🇩","🇪","🇫","🇬","🇭","🇮","🇯","🇰","🇱","🇲","🇳","🇴","🇵","🇶","🇷","🇸","🇹"]
-    embed=nextcord.Embed(title=bot.user.name)
-    for num in range(len(roles)):
-      embed.add_field(name=reactions[num],value=roles[num].mention,inline=False)
-    board = await ctx.send(embed=embed)
-    for num in range(len(roles)):
-      await board.add_reaction(reactions[num])
-    try:
-      os.mkdir(f'db-{config["guild"]}/{ctx.channel.id}')
-    except FileExistsError:
-      pass
-    with open(f'db-{config["guild"]}/{ctx.channel.id}/{board.id}.json','w',encoding='utf-8') as f:
-      f.write("{}")
-    for num in range(len(roles)):
-      with open(f'db-{config["guild"]}/{ctx.channel.id}/{board.id}.json','r',encoding='utf-8') as f:
-        data = json.load(f)
-        data[reactions[num]] = str(roles[num].id)
-      with open(f'db-{config["guild"]}/{ctx.channel.id}/{board.id}.json','w',encoding='utf-8') as f:
-        json.dump(data,f,indent=2,ensure_ascii=False)
-  else:
-    await ctx.send("このコマンドを実行するにはメッセージ管理の権限が必要です")
-
-@bot.event
-async def on_raw_reaction_add(payload:nextcord.RawReactionActionEvent):
-  if payload.member == bot.user:
-    return
-  try:
-    with open(f'db-{config["guild"]}/{payload.channel_id}/{payload.message_id}.json','r',encoding='utf-8') as f:
-      data = json.load(f)
-      guild = bot.get_guild(payload.guild_id)
-      member = guild.get_member(payload.user_id)
-      role = guild.get_role(int(data[payload.emoji.name]))
-      try:
-        await member.add_roles(role)
-      except:
-        channel = bot.get_channel(payload.channel_id)
-        await channel.send(f"{member.mention}\nロールの付与に失敗しました",delete_after=5)
-  except FileNotFoundError:
-    return
-
-@bot.event
-async def on_raw_reaction_remove(payload:nextcord.RawReactionActionEvent):
-  if payload.member == bot.user:
-    return
-  try:
-    with open(f'db-{config["guild"]}/{payload.channel_id}/{payload.message_id}.json','r',encoding='utf-8') as f:
-      data = json.load(f)
-      guild = bot.get_guild(payload.guild_id)
-      member = guild.get_member(payload.user_id)
-      role = guild.get_role(int(data[payload.emoji.name]))
-      try:
-        await member.remove_roles(role)
-      except:
-        channel = bot.get_channel(payload.channel_id)
-        await channel.send(f"{member.mention}\nロールの削除に失敗しました",delete_after=5)
-  except FileNotFoundError:
-    return
 
 
 messages = {}
